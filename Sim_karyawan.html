@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard Data SIM Karyawan</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#eef5ee;
+}
+
+.header{
+background:#1f8f3a;
+color:white;
+padding:15px;
+text-align:center;
+font-size:22px;
+}
+
+.container{
+width:90%;
+margin:auto;
+margin-top:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+margin-bottom:20px;
+}
+
+.login{
+width:350px;
+margin:auto;
+margin-top:120px;
+}
+
+input,select{
+width:100%;
+padding:8px;
+margin-top:5px;
+margin-bottom:10px;
+border:1px solid #ccc;
+border-radius:5px;
+}
+
+button{
+background:#1f8f3a;
+color:white;
+border:none;
+padding:10px 15px;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#14692b;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:8px;
+text-align:center;
+}
+
+th{
+background:#1f8f3a;
+color:white;
+}
+
+img{
+width:60px;
+}
+
+.hidden{
+display:none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="loginPage" class="login card">
+
+<h3>Login Sistem</h3>
+
+<input type="text" id="user" placeholder="Username">
+<input type="password" id="pass" placeholder="Password">
+
+<button onclick="login()">Login</button>
+
+</div>
+
+<div id="app" class="hidden">
+
+<div class="header">
+Dashboard Data SIM Karyawan
+</div>
+
+<div class="container">
+
+<div class="card">
+
+<h3>Input Data Karyawan</h3>
+
+<input type="text" id="nama" placeholder="Nama Karyawan">
+<input type="text" id="nik" placeholder="NIK">
+
+<select id="cabang">
+<option value="">Pilih Cabang</option>
+<option>Pinrang</option>
+<option>Gowa</option>
+<option>Maros</option>
+<option>Pangkep</option>
+<option>Sidrap</option>
+<option>Soppeng</option>
+<option>Sinjai</option>
+<option>Wajo</option>
+<option>Bone</option>
+<option>Bulukumba</option>
+<option>Bantaeng</option>
+<option>Jeneponto</option>
+<option>Takalar</option>
+<option>Barru</option>
+</select>
+
+<select id="sim">
+<option value="">Status SIM</option>
+<option>SIM C</option>
+<option>Belum Memiliki SIM</option>
+</select>
+
+<label>Upload Foto SIM</label>
+<input type="file" id="foto">
+
+<button onclick="tambahData()">Simpan Data</button>
+
+</div>
+
+<div class="card">
+
+<h3>Data Karyawan</h3>
+
+<input type="text" id="search" placeholder="Cari nama..." onkeyup="cariData()">
+
+<button onclick="exportExcel()">Export Excel</button>
+
+<table id="tabel">
+
+<thead>
+<tr>
+<th>No</th>
+<th>Nama</th>
+<th>NIK</th>
+<th>Cabang</th>
+<th>Status SIM</th>
+<th>Foto</th>
+<th>Aksi</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+let data=JSON.parse(localStorage.getItem("dataSIM"))||[];
+let editIndex=-1;
+
+function login(){
+
+let user=document.getElementById("user").value;
+let pass=document.getElementById("pass").value;
+
+if(user=="hrdreg" && pass=="lupa"){
+
+localStorage.setItem("role","admin");
+
+document.getElementById("loginPage").style.display="none";
+document.getElementById("app").classList.remove("hidden");
+
+}
+
+else if(user=="cabang" && pass=="Komida12"){
+
+localStorage.setItem("role","cabang");
+
+document.getElementById("loginPage").style.display="none";
+document.getElementById("app").classList.remove("hidden");
+
+}
+
+else{
+
+alert("Login salah");
+
+}
+
+}
+
+function tampilkanData(){
+
+let role=localStorage.getItem("role");
+
+let tbody=document.querySelector("#tabel tbody");
+tbody.innerHTML="";
+
+data.forEach((d,i)=>{
+
+let aksi="";
+
+if(role=="admin"){
+aksi=`
+<button onclick="editData(${i})">Edit</button>
+<button onclick="hapusData(${i})">Hapus</button>
+`;
+}else{
+aksi="Tidak ada akses";
+}
+
+let row=`
+<tr>
+<td>${i+1}</td>
+<td>${d.nama}</td>
+<td>${d.nik}</td>
+<td>${d.cabang}</td>
+<td>${d.sim}</td>
+<td><img src="${d.foto}"></td>
+<td>${aksi}</td>
+</tr>
+`;
+
+tbody.innerHTML+=row;
+
+});
+
+localStorage.setItem("dataSIM",JSON.stringify(data));
+
+}
+
+function tambahData(){
+
+let nama=document.getElementById("nama").value;
+let nik=document.getElementById("nik").value;
+let cabang=document.getElementById("cabang").value;
+let sim=document.getElementById("sim").value;
+
+let file=document.getElementById("foto").files[0];
+
+if(nama==""||nik==""||cabang==""||sim==""){
+alert("Data belum lengkap");
+return;
+}
+
+let reader=new FileReader();
+
+reader.onload=function(){
+
+let foto=reader.result;
+
+let obj={nama,nik,cabang,sim,foto};
+
+if(editIndex==-1){
+data.push(obj);
+}else{
+data[editIndex]=obj;
+editIndex=-1;
+}
+
+tampilkanData();
+resetForm();
+
+}
+
+if(file){
+reader.readAsDataURL(file);
+}else{
+reader.onload();
+}
+
+}
+
+function editData(i){
+
+let role=localStorage.getItem("role");
+
+if(role!="admin"){
+alert("Akses ditolak");
+return;
+}
+
+let d=data[i];
+
+document.getElementById("nama").value=d.nama;
+document.getElementById("nik").value=d.nik;
+document.getElementById("cabang").value=d.cabang;
+document.getElementById("sim").value=d.sim;
+
+editIndex=i;
+
+}
+
+function hapusData(i){
+
+let role=localStorage.getItem("role");
+
+if(role!="admin"){
+alert("Akses ditolak");
+return;
+}
+
+if(confirm("Hapus data?")){
+data.splice(i,1);
+tampilkanData();
+}
+
+}
+
+function resetForm(){
+
+document.getElementById("nama").value="";
+document.getElementById("nik").value="";
+document.getElementById("cabang").value="";
+document.getElementById("sim").value="";
+document.getElementById("foto").value="";
+
+}
+
+function cariData(){
+
+let key=document.getElementById("search").value.toLowerCase();
+
+document.querySelectorAll("#tabel tbody tr").forEach(row=>{
+
+let nama=row.cells[1].innerText.toLowerCase();
+
+row.style.display=nama.includes(key)?"":"none";
+
+});
+
+}
+
+function exportExcel(){
+
+let table=document.getElementById("tabel").outerHTML;
+let a=document.createElement("a");
+a.href='data:application/vnd.ms-excel,'+encodeURIComponent(table);
+a.download='data_sim_karyawan.xls';
+a.click();
+
+}
+
+tampilkanData();
+
+</script>
+
+</body>
+</html>
